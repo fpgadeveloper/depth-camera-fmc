@@ -312,6 +312,9 @@ set axi_lite_ports {}
 # List of interrupt pins
 set intr_list {}
 
+# Number of cameras
+set num_cams [llength $cams]
+
 # Add the Processor System and apply board preset
 create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e zynq_ultra_ps_e_0
 apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" }  [get_bd_cells zynq_ultra_ps_e_0]
@@ -392,13 +395,13 @@ set concat_0 [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat xlconcat_0]
 # lappend axi_lite_ports [list "axi_intc_0/s_axi" "clk_wiz_0/clk_out2" "rst_ps_axi_150M/peripheral_aresetn"]
 connect_bd_net [get_bd_pins xlconcat_0/dout] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
 
-# Add constant for the CAM1 and CAM3 CLK_SEL pin (11b for UltraZed-EV Carrier and 10b for Genesys ZU, 00b for all other boards)
+# Add constant for the CAM3 CLK_SEL pin (1b for UltraZed-EV Carrier and Genesys ZU, 0b for all other boards)
 set clk_sel [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant clk_sel]
-set_property -dict [list CONFIG.CONST_WIDTH {2}] $clk_sel
+set_property -dict [list CONFIG.CONST_WIDTH {1}] $clk_sel
 if { $target == "uzev" } {
-  set_property -dict [list CONFIG.CONST_VAL {0x03}] $clk_sel
+  set_property -dict [list CONFIG.CONST_VAL {0x01}] $clk_sel
 } elseif { $target == "genesyszu" } {
-  set_property -dict [list CONFIG.CONST_VAL {0x02}] $clk_sel
+  set_property -dict [list CONFIG.CONST_VAL {0x01}] $clk_sel
 } else {
   set_property -dict [list CONFIG.CONST_VAL {0x00}] $clk_sel
 }
@@ -407,7 +410,7 @@ connect_bd_net [get_bd_ports clk_sel] [get_bd_pins clk_sel/dout]
 
 # Add and configure GPIO
 set gpio [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio gpio]
-set_property -dict [list CONFIG.C_GPIO_WIDTH {6} CONFIG.C_ALL_OUTPUTS {1}] $gpio
+set_property -dict [list CONFIG.C_GPIO_WIDTH {9} CONFIG.C_ALL_OUTPUTS {1}] $gpio
 connect_bd_net [get_bd_pins clk_wiz_0/clk_out2] [get_bd_pins gpio/s_axi_aclk]
 connect_bd_net [get_bd_pins rst_ps_axi_150M/peripheral_aresetn] [get_bd_pins gpio/s_axi_aresetn]
 lappend axi_lite_ports [list "gpio/S_AXI" "clk_wiz_0/clk_out2" "rst_ps_axi_150M/peripheral_aresetn"]
@@ -423,7 +426,8 @@ set smartcon_ports [expr {$num_cams*2}]
 set_property -dict [list CONFIG.NUM_SI $smartcon_ports] [get_bd_cells smartconnect_0]
 
 # Add the MIPI pipes
-for {set i 0} {$i < $num_cams} {incr i} {
+set smartcon_index 0
+foreach i $cams {
   # Create the MIPI pipe block
   create_mipi_pipe $i [dict get $mipi_loc_dict $target $i]
   # Externalize all of the strobe propagation pins
@@ -457,10 +461,10 @@ for {set i 0} {$i < $num_cams} {incr i} {
   create_bd_intf_port -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 iic_$i
   connect_bd_intf_net [get_bd_intf_ports iic_$i] [get_bd_intf_pins mipi_$i/IIC]
   # Connect the AXI MM interface of the VDMA
-  set smartcon_index [expr {$i*2}]
   connect_bd_intf_net -boundary_type upper [get_bd_intf_pins mipi_$i/M_AXI_S2MM] [get_bd_intf_pins smartconnect_0/S0${smartcon_index}_AXI]
-  set smartcon_index [expr {$i*2+1}]
+  set smartcon_index [expr {$smartcon_index+1}]
   connect_bd_intf_net -boundary_type upper [get_bd_intf_pins mipi_$i/M_AXI_MM2S] [get_bd_intf_pins smartconnect_0/S0${smartcon_index}_AXI]
+  set smartcon_index [expr {$smartcon_index+1}]
 }
 
 # Add a constant HIGH
@@ -575,11 +579,10 @@ connect_bd_net [get_bd_pins clk_wiz_0/clk_out3] [get_bd_pins axis_switch/aclk]
 connect_bd_net [get_bd_pins clk_wiz_0/clk_out2] [get_bd_pins axis_switch/s_axi_ctrl_aclk]
 connect_bd_net [get_bd_pins rst_video_250M/peripheral_aresetn] [get_bd_pins axis_switch/aresetn]
 connect_bd_net [get_bd_pins rst_ps_axi_150M/peripheral_aresetn] [get_bd_pins axis_switch/s_axi_ctrl_aresetn]
-connect_bd_intf_net [get_bd_intf_pins mipi_0/M_AXIS_MM2S] [get_bd_intf_pins axis_switch/S00_AXIS]
-connect_bd_intf_net [get_bd_intf_pins mipi_1/M_AXIS_MM2S] [get_bd_intf_pins axis_switch/S01_AXIS]
-if { $num_cams == 4 } {
-  connect_bd_intf_net [get_bd_intf_pins mipi_2/M_AXIS_MM2S] [get_bd_intf_pins axis_switch/S02_AXIS]
-  connect_bd_intf_net [get_bd_intf_pins mipi_3/M_AXIS_MM2S] [get_bd_intf_pins axis_switch/S03_AXIS]
+set switch_index 0
+foreach i $cams {
+  connect_bd_intf_net [get_bd_intf_pins mipi_$i/M_AXIS_MM2S] [get_bd_intf_pins axis_switch/S0${switch_index}_AXIS]
+  set switch_index [expr {$switch_index+1}]
 }
 connect_bd_intf_net [get_bd_intf_pins axis_switch/M00_AXIS] [get_bd_intf_pins axi4s_vid_out/video_in]
 

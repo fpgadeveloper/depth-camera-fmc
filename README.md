@@ -8,12 +8,12 @@ with the carriers that we intend to support.
 
 At the moment, we intend to support the following boards:
 
-* ZCU104 (LPC: 4x 4-lane Luxonis cameras)
-* ZCU102 (HPC0: 4x 4-lane Luxonis cameras, HPC1: 2x 4-lane Luxonis cameras)
-* ZCU106 (HPC0: 4x 4-lane Luxonis cameras)
-* PYNQ-ZU (LPC: 2x 4-lane Luxonis cameras + 2x 2-lane Luxonis cameras)
-* Genesys-ZU (LPC: 4x 4-lane Luxonis cameras)
-* UltraZed EV carrier (HPC: 1x 4-lane Luxonis cameras + 3x 2-lane Luxonis cameras)
+* ZCU104 (LPC: 4x 4-lane cameras)
+* ZCU102 (HPC0: 4x 4-lane cameras, HPC1: 2x 4-lane cameras)
+* ZCU106 (HPC0: 4x 4-lane cameras)
+* PYNQ-ZU (LPC: 2x 4-lane cameras + 2x 2-lane cameras)
+* Genesys-ZU (LPC: 4x 4-lane cameras)
+* UltraZed EV carrier (HPC: 2x 2-lane cameras)
 
 That list may grow, but may also shrink depending on any issues that we come across during
 development.
