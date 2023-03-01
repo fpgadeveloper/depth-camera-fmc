@@ -410,7 +410,7 @@ connect_bd_net [get_bd_ports clk_sel] [get_bd_pins clk_sel/dout]
 
 # Add and configure GPIO
 set gpio [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio gpio]
-set_property -dict [list CONFIG.C_GPIO_WIDTH {9} CONFIG.C_ALL_OUTPUTS {1}] $gpio
+set_property -dict [list CONFIG.C_GPIO_WIDTH {7} CONFIG.C_ALL_OUTPUTS {1}] $gpio
 connect_bd_net [get_bd_pins clk_wiz_0/clk_out2] [get_bd_pins gpio/s_axi_aclk]
 connect_bd_net [get_bd_pins rst_ps_axi_150M/peripheral_aresetn] [get_bd_pins gpio/s_axi_aresetn]
 lappend axi_lite_ports [list "gpio/S_AXI" "clk_wiz_0/clk_out2" "rst_ps_axi_150M/peripheral_aresetn"]
